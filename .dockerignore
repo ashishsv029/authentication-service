@@ -1,0 +1,22 @@
+# Ignore Maven or Gradle directories - Referred from chatgpt
+.mvn/
+.gradle/
+
+# Ignore build directories
+target/
+build/
+
+# Ignore project-specific files
+.idea/
+.vscode/
+*.iml
+
+# Ignore temporary files
+*.log
+*.tmp
+
+# Ignore version control files
+.git/
+.gitignore
+.gitlab-ci.yml
+.github/

@@ -17,7 +17,8 @@ import java.util.Objects;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/user")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+//@CrossOrigin(origins = {"http://localhost:3000", "http://meghasandesham-frontend:3000", "http://nginx", "https://nginx" ,"http://nginx:3000", "http://*.ngrok-free.app"}, allowCredentials = "true")
+//@CrossOrigin(allowedOriginPatterns = "*", allowCredentials = "true")
 public class AuthController {
 
     private AuthService authService;
@@ -37,7 +38,7 @@ public class AuthController {
         LoginResponseDTO authResponse = authService.loginUser(loginPayload);
         // We can add a cookie in response in 2 ways. 1. using response.addCookie 2. using response.setHeader("Set-Cookie", <value>);
         // The javax.servlet.http.Cookie class does not have a built-in method setSameSite because the SameSite attribute was introduced after the standard Java Cookie class was designed. To set the SameSite attribute in a cookie, you have to manually add it to the Set-Cookie header in the HTTP response.
-        Cookie cookie = new Cookie("authToken", authResponse.getJwt());
+        Cookie cookie = new Cookie("authToken-authorization", authResponse.getJwt());
         cookie.setHttpOnly(true); // So that this cookie cant be accessed by client side javascript code and http cookies cant be set by client
         //cookie.setSecure(true); // Use true if your site is HTTPS
         cookie.setPath("/");
@@ -47,6 +48,7 @@ public class AuthController {
         // Browsers typically store persistent cookies in a designated location on the user's device, often in a text file called a "cookie jar" or "cookie store." The exact location varies depending on the browser and operating system.
         // The default behavior for cookies without a SameSite attribute is equivalent to SameSite=Lax. To specify another value we need to do that only via the header like below
         //response.setHeader("Set-Cookie", String.format("authToken=%s; HttpOnly; SameSite=None;", authResponse.getJwt())); //without this header browser wont set the cookie
+        response.setHeader("Set-Cookie", String.format("authToken=%s; Max-Age=%d; HttpOnly; Secure; SameSite=None;", authResponse.getJwt(), 24 * 60 * 60));
         response.addCookie(cookie);
         return new ResponseEntity<>(authResponse, HttpStatus.OK);
     }
@@ -55,12 +57,13 @@ public class AuthController {
     public ResponseEntity<ValidationResponseDTO> login(@RequestBody ValidationRequestDTO validationPayload, HttpServletRequest request) throws Exception {
         System.out.println("VALIDATE API CALL...");
         if(Objects.equals(validationPayload.getJwt(), "")) { // when jwt is not sent in payload, trying to extract from request cookies
+            System.out.println("NO JWT IN PAYLOAD..");
             Cookie[] cookies = request.getCookies();
             String jwtFromAuthCookie = null;
 
             if (cookies != null) {
                 for (Cookie cookie : cookies) {
-                    if ("authToken".equals(cookie.getName())) { // Replace "authToken" with the name of your cookie
+                    if ("authToken-authorization".equals(cookie.getName())) { // Replace "authToken" with the name of your cookie
                         jwtFromAuthCookie = cookie.getValue();
                         break;
                     }
@@ -73,6 +76,7 @@ public class AuthController {
             validationPayload.setJwt(jwtFromAuthCookie);
         }
         ValidationResponseDTO response = authService.validateUser(validationPayload);
+        System.out.println("VALIDATION DONE..");
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
